@@ -182,14 +182,16 @@ defmodule AshAuthentication.Phoenix.Router do
             mod -> mod
           end)
 
+        session = %{
+          "overrides" => unquote(overrides),
+          "otp_app" => unquote(otp_app),
+          "path" => unquote(path),
+          "reset_path" => unquote(reset_path),
+          "register_path" => unquote(register_path)
+        }
+
         live_session_opts = [
-          session: %{
-            "overrides" => unquote(overrides),
-            "otp_app" => unquote(otp_app),
-            "path" => unquote(path),
-            "reset_path" => unquote(reset_path),
-            "register_path" => unquote(register_path)
-          },
+          session: {AshAuthentication.Phoenix.Router, :add_tenant_to_session, [session]},
           on_mount: on_mount
         ]
 
@@ -217,6 +219,16 @@ defmodule AshAuthentication.Phoenix.Router do
         end
       end
     end
+  end
+
+  @doc """
+  Adds tenant from connection to session
+  """
+  @spec add_tenant_to_session(Plug.Conn.t(), %{required(String.t()) => any}) :: %{
+          required(String.t()) => any
+        }
+  def add_tenant_to_session(conn, session \\ %{}) do
+    session |> Map.put("tenant", Ash.PlugHelpers.get_tenant(conn))
   end
 
   @doc """
